@@ -1107,13 +1107,13 @@ export const AdminDashboard: React.FC = () => {
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  أدخل رمز أمان المعلم للتأكيد (emam2025)
+                  أدخل كلمة مرور المعلم الحالية للتأكيد
                 </label>
                 <input
                   type="password"
                   value={resetPin}
                   onChange={(e) => setResetPin(e.target.value)}
-                  placeholder="رمز الأمان..."
+                  placeholder="كلمة المرور الحالية للتأكيد..."
                   className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl text-sm font-mono text-center focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
                   dir="ltr"
                 />

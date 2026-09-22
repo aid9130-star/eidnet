@@ -115,13 +115,13 @@ initializeClientStore();
 export function verifyAdminPinLocal(enteredPin: string): boolean {
   const currentPin = localStorage.getItem(STORAGE_KEYS.ADMIN_PIN) || DEFAULT_ADMIN_PIN;
   const cleanEntered = enteredPin.trim();
-  // Allow configured PIN or master fallback PIN 'emam2025'
-  return cleanEntered === currentPin.trim() || cleanEntered === DEFAULT_ADMIN_PIN;
+  // Strictly match the configured PIN only (default emam2025 is invalidated once changed)
+  return cleanEntered === currentPin.trim();
 }
 
 export function changeAdminPinLocal(currentPin: string, newPin: string): { success: boolean; message?: string; error?: string } {
   const storedPin = localStorage.getItem(STORAGE_KEYS.ADMIN_PIN) || DEFAULT_ADMIN_PIN;
-  if (currentPin.trim() !== storedPin.trim() && currentPin.trim() !== DEFAULT_ADMIN_PIN) {
+  if (currentPin.trim() !== storedPin.trim()) {
     return { success: false, error: 'كلمة المرور الحالية غير صحيحة' };
   }
   if (!newPin.trim() || newPin.trim().length < 4) {
@@ -130,6 +130,23 @@ export function changeAdminPinLocal(currentPin: string, newPin: string): { succe
 
   localStorage.setItem(STORAGE_KEYS.ADMIN_PIN, newPin.trim());
   return { success: true, message: 'تم تغيير كلمة المرور بنجاح' };
+}
+
+export function setAdminPinLocal(newPin: string): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.ADMIN_PIN, newPin.trim());
+  } catch (err) {
+    console.error('Failed to set admin pin in localStorage:', err);
+  }
+}
+
+export function isAdminPinCustomized(): boolean {
+  try {
+    const current = localStorage.getItem(STORAGE_KEYS.ADMIN_PIN);
+    return Boolean(current && current.trim() !== DEFAULT_ADMIN_PIN);
+  } catch {
+    return false;
+  }
 }
 
 // ================= ACCESS CODES =================

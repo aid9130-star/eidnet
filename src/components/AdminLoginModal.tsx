@@ -15,6 +15,13 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showChangePinModal, setShowChangePinModal] = useState(false);
+  const [isPinCustomized, setIsPinCustomized] = useState(() => dataService.isAdminPinCustomized());
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setIsPinCustomized(dataService.isAdminPinCustomized());
+    }
+  }, [isOpen, showChangePinModal]);
 
   if (!isOpen) return null;
 
@@ -100,7 +107,13 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
               </button>
             </div>
             <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-400 mt-2 px-1">
-              <span>الرمز الافتراضي: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">emam2025</strong></span>
+              {isPinCustomized ? (
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  كلمة المرور مخصصة ومحمية
+                </span>
+              ) : (
+                <span>الرمز الافتراضي: <strong className="text-indigo-600 dark:text-indigo-400 font-mono">emam2025</strong></span>
+              )}
               <button
                 type="button"
                 onClick={() => setShowChangePinModal(true)}
@@ -132,6 +145,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
       <ChangeAdminPinModal
         isOpen={showChangePinModal}
         onClose={() => setShowChangePinModal(false)}
+        onSuccess={() => setIsPinCustomized(true)}
       />
     </div>
   );

@@ -869,8 +869,7 @@ export async function getAdminPin(): Promise<string> {
 export async function verifyAdminPin(pin: string): Promise<boolean> {
   const currentPin = await getAdminPin();
   const trimmed = (pin || '').trim();
-  // Match current configured PIN, or fallback default emam2025
-  return trimmed === currentPin || (currentPin === 'emam2025' && trimmed === '2025');
+  return trimmed === currentPin.trim();
 }
 
 export async function changeAdminPin(currentPin: string, newPin: string): Promise<{ success: boolean; message: string }> {

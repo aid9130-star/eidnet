@@ -34,20 +34,47 @@ async function tryFetchJson<T>(url: string, options?: RequestInit): Promise<T | 
 
 // ================= ADMIN AUTH =================
 export async function verifyAdminPin(enteredPin: string): Promise<{ success: boolean; token: string }> {
-  // 1. Try server endpoint
-  const serverRes = await tryFetchJson<{ success: boolean; token: string }>('/api/admin/verify-pin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin: enteredPin.trim() }),
-  });
+  const cleanPin = enteredPin.trim();
+  if (!cleanPin) {
+    throw new Error('يرجى إدخال رمز الدخول السري أو كلمة المرور');
+  }
 
-  if (serverRes && serverRes.success) {
-    sessionStorage.setItem('tafawwoq_admin_auth', serverRes.token || 'authenticated');
-    return serverRes;
+  // 1. Try server endpoint
+  let serverRejection: string | null = null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const res = await fetch('/api/admin/verify-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: cleanPin }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      if (res.ok && data && (data.success || data.token)) {
+        const token = data.token || 'tafawwoq_teacher_master_authenticated';
+        sessionStorage.setItem('tafawwoq_admin_auth', token);
+        return { success: true, token };
+      }
+      if (res.status === 401 || res.status === 400) {
+        serverRejection = data.error || data.message || 'كلمة المرور أو رمز الدخول غير صحيح';
+      }
+    }
+  } catch {
+    // Network error or offline -> proceed to client storage fallback
+  }
+
+  // If server is active and explicitly rejected the password, abort immediately
+  if (serverRejection) {
+    throw new Error(serverRejection);
   }
 
   // 2. Fallback to client storage
-  const isMatch = clientStore.verifyAdminPinLocal(enteredPin);
+  const isMatch = clientStore.verifyAdminPinLocal(cleanPin);
   if (!isMatch) {
     throw new Error('كلمة المرور أو رمز الدخول غير صحيح');
   }
@@ -58,25 +85,65 @@ export async function verifyAdminPin(enteredPin: string): Promise<{ success: boo
 }
 
 export async function changeAdminPin(currentPin: string, newPin: string): Promise<{ success: boolean; message: string }> {
-  // 1. Try server
-  const serverRes = await tryFetchJson<{ success: boolean; message: string }>('/api/admin/change-pin', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentPin, newPin }),
-  });
+  const cleanCurrent = currentPin.trim();
+  const cleanNew = newPin.trim();
 
-  // Always update local store too
-  const localRes = clientStore.changeAdminPinLocal(currentPin, newPin);
-
-  if (serverRes && serverRes.success) {
-    return serverRes;
+  if (!cleanNew || cleanNew.length < 4) {
+    throw new Error('كلمة المرور الجديدة يجب ألا تقل عن 4 خانات');
   }
 
+  // 1. Try server
+  let serverRejection: string | null = null;
+  let serverHandled = false;
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const res = await fetch('/api/admin/change-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPin: cleanCurrent, newPin: cleanNew }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      if (res.ok && data) {
+        serverHandled = true;
+        // Keep client store strictly in sync with new password
+        clientStore.setAdminPinLocal(cleanNew);
+        return { success: true, message: data.message || 'تم تحديث كلمة مرور المشرف بنجاح' };
+      }
+      if (res.status === 400 || res.status === 401) {
+        serverRejection = data.error || data.message || 'كلمة المرور الحالية غير صحيحة';
+      }
+    }
+  } catch {
+    // Network error or offline -> proceed to local store
+  }
+
+  // If server is active and explicitly rejected the change, abort immediately
+  if (serverRejection) {
+    throw new Error(serverRejection);
+  }
+
+  if (serverHandled) {
+    return { success: true, message: 'تم تحديث كلمة مرور المشرف بنجاح' };
+  }
+
+  // 2. Client fallback
+  const localRes = clientStore.changeAdminPinLocal(cleanCurrent, cleanNew);
   if (!localRes.success) {
     throw new Error(localRes.error || 'فشل تغيير كلمة المرور');
   }
 
   return { success: true, message: localRes.message || 'تم تحديث كلمة مرور المشرف بنجاح' };
+}
+
+export function isAdminPinCustomized(): boolean {
+  return clientStore.isAdminPinCustomized();
 }
 
 // ================= STUDENT AUTH =================

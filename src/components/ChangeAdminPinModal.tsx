@@ -127,7 +127,7 @@ export const ChangeAdminPinModal: React.FC<ChangeAdminPinModalProps> = ({ isOpen
               <input
                 type={showCurrentPin ? 'text' : 'password'}
                 required
-                placeholder="أدخل كلمة المرور الحالية (مثل emam2025)..."
+                placeholder="أدخل كلمة المرور الحالية..."
                 value={currentPin}
                 onChange={(e) => setCurrentPin(e.target.value)}
                 className="w-full pr-10 pl-10 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent transition-all"
@@ -142,7 +142,9 @@ export const ChangeAdminPinModal: React.FC<ChangeAdminPinModalProps> = ({ isOpen
               </button>
             </div>
             <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-              الرمز الافتراضي المبدئي هو: <code className="text-indigo-600 dark:text-indigo-400 font-mono">emam2025</code>
+              {dataService.isAdminPinCustomized()
+                ? 'أدخل كلمة المرور المخصصة الحالية للتحقق من هويتك'
+                : <span>الرمز الافتراضي المبدئي هو: <code className="text-indigo-600 dark:text-indigo-400 font-mono">emam2025</code></span>}
             </p>
           </div>
 
